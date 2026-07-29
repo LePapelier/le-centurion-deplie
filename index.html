@@ -65,6 +65,7 @@
       button:disabled { opacity: 0.45; cursor: default; }
       .ctrl { display: flex; align-items: center; gap: 6px; font-size: 13px; }
       .ctrl input { width: 70px; font: inherit; padding: 4px; border: 1px solid var(--border); border-radius: 4px; }
+      .ctrl select { font: inherit; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); }
       #dropzone {
         position: absolute;
         inset: 0;
@@ -127,6 +128,21 @@
         <input type="number" id="tabDepth" value="6" min="1" step="1" />
         <span>mm</span>
       </div>
+      <div class="ctrl">
+        <label for="pageFormat">Papier</label>
+        <select id="pageFormat">
+          <option>A5</option>
+          <option selected>A4</option>
+          <option>A3</option>
+          <option>Letter</option>
+          <option>Legal</option>
+        </select>
+        <select id="pageOrientation">
+          <option value="portrait" selected>portrait</option>
+          <option value="paysage">paysage</option>
+        </select>
+      </div>
+      <button id="maxScale" disabled title="Régler l'échelle au maximum tenant sur une feuille">Échelle max</button>
       <div class="ctrl">
         <span>Exemples :</span>
         <button data-sample="cube.stl">cube</button>

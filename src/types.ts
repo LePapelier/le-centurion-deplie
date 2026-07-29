@@ -91,6 +91,17 @@ export interface Settings {
   marginMm: number;
 }
 
+/** paper formats, portrait dimensions in mm */
+export const PAGE_FORMATS = {
+  A5: { width: 148, height: 210 },
+  A4: { width: 210, height: 297 },
+  A3: { width: 297, height: 420 },
+  Letter: { width: 215.9, height: 279.4 },
+  Legal: { width: 215.9, height: 355.6 },
+} as const;
+
+export type PageFormat = keyof typeof PAGE_FORMATS;
+
 export const DEFAULT_SETTINGS: Settings = {
   scaleMmPerUnit: 1,
   tabDepthMm: 6,

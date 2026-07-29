@@ -1,4 +1,13 @@
-import { DEFAULT_SETTINGS, type EdgeKind, type Mesh, type Settings, type UnfoldResult } from './types';
+import {
+  DEFAULT_SETTINGS,
+  PAGE_FORMATS,
+  type EdgeKind,
+  type Mesh,
+  type PageFormat,
+  type Settings,
+  type UnfoldResult,
+} from './types';
+import { computeMaxScale } from './core/pack';
 import { weldMesh } from './core/weld';
 import { parseModel } from './io/import';
 import { runPipeline } from './pipeline';
@@ -17,6 +26,9 @@ const scaleInput = document.getElementById('scale') as HTMLInputElement;
 const tabDepthInput = document.getElementById('tabDepth') as HTMLInputElement;
 const savBtn = document.getElementById('saveProject') as HTMLButtonElement;
 const pdfBtn = document.getElementById('exportPdf') as HTMLButtonElement;
+const formatSel = document.getElementById('pageFormat') as HTMLSelectElement;
+const orientSel = document.getElementById('pageOrientation') as HTMLSelectElement;
+const maxScaleBtn = document.getElementById('maxScale') as HTMLButtonElement;
 
 let currentMesh: Mesh | null = null;
 let currentResult: UnfoldResult | null = null;
@@ -24,10 +36,14 @@ let sourceName = 'modele';
 let pinnedEdgeKinds: EdgeKind[] | undefined;
 
 function currentSettings(): Settings {
+  const fmt = PAGE_FORMATS[formatSel.value as PageFormat] ?? PAGE_FORMATS.A4;
+  const landscape = orientSel.value === 'paysage';
   return {
     ...DEFAULT_SETTINGS,
     scaleMmPerUnit: Math.max(0.001, Number(scaleInput.value) || 1),
     tabDepthMm: Math.max(0.5, Number(tabDepthInput.value) || 6),
+    pageWidthMm: landscape ? fmt.height : fmt.width,
+    pageHeightMm: landscape ? fmt.width : fmt.height,
   };
 }
 
@@ -46,6 +62,7 @@ function recompute(): void {
     statsEl.textContent = `${faces} faces · ${currentResult.islands.length} pièce(s) · ${currentResult.pageCount} page(s) · ${dt.toFixed(0)} ms`;
     savBtn.disabled = false;
     pdfBtn.disabled = false;
+    maxScaleBtn.disabled = false;
     dropzone.classList.add('hidden');
   } catch (err) {
     showWarnings([err instanceof Error ? err.message : String(err)]);
@@ -92,6 +109,21 @@ fileInput.addEventListener('change', () => {
 // but a pinned project keeps its stored fold/cut decision
 scaleInput.addEventListener('change', recompute);
 tabDepthInput.addEventListener('change', recompute);
+formatSel.addEventListener('change', recompute);
+orientSel.addEventListener('change', recompute);
+
+// largest scale where every piece fits a page; tab size is fixed in mm so
+// the fit is re-checked after re-running the pipeline, shrinking if needed
+maxScaleBtn.addEventListener('click', () => {
+  if (!currentResult) return;
+  let s = computeMaxScale(currentResult.islands, currentResult.settings);
+  for (let i = 0; i < 4; i++) {
+    scaleInput.value = String(Math.max(0.001, Math.floor(s * 100) / 100));
+    recompute();
+    if (!currentResult || !currentResult.warnings.some((w) => w.includes('dépasse'))) break;
+    s *= 0.95;
+  }
+});
 
 document.body.addEventListener('dragover', (e) => {
   e.preventDefault();

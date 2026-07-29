@@ -180,6 +180,44 @@ describe('non-manifold input', () => {
   });
 });
 
+describe('paper formats + max scale', () => {
+  it('A3 never needs more pages than A4', () => {
+    const mesh = weldMesh(torusSoup(30, 12, 12, 6));
+    const a4 = runPipeline(mesh, { ...DEFAULT_SETTINGS });
+    const a3 = runPipeline(mesh, { ...DEFAULT_SETTINGS, pageWidthMm: 297, pageHeightMm: 420 });
+    expect(a3.pageCount).toBeLessThanOrEqual(a4.pageCount);
+  });
+
+  it('landscape swap keeps everything within margins', () => {
+    const result = runPipeline(weldMesh(icosahedronSoup(3)), {
+      ...DEFAULT_SETTINGS,
+      pageWidthMm: 297,
+      pageHeightMm: 210,
+    });
+    const { pageWidthMm: W, pageHeightMm: H, marginMm: m } = result.settings;
+    for (const page of layoutPages(result)) {
+      for (const l of page.lines) {
+        for (const pt of [l.a, l.b]) {
+          expect(pt.x).toBeGreaterThanOrEqual(m - 1e-6);
+          expect(pt.x).toBeLessThanOrEqual(W - m + 1e-6);
+          expect(pt.y).toBeGreaterThanOrEqual(m - 1e-6);
+          expect(pt.y).toBeLessThanOrEqual(H - m + 1e-6);
+        }
+      }
+    }
+  });
+
+  it('computeMaxScale: slightly below it, no piece overflows', async () => {
+    const { computeMaxScale } = await import('../src/core/pack');
+    const mesh = weldMesh(icosahedronSoup(3));
+    const base = runPipeline(mesh, { ...DEFAULT_SETTINGS });
+    const sMax = computeMaxScale(base.islands, base.settings);
+    expect(sMax).toBeGreaterThan(0);
+    const scaled = runPipeline(mesh, { ...DEFAULT_SETTINGS, scaleMmPerUnit: sMax * 0.9 });
+    expect(scaled.warnings.some((w) => w.includes('dépasse'))).toBe(false);
+  });
+});
+
 describe('project round-trip', () => {
   it('reload reproduces the identical layout', () => {
     const result = run(icosahedronSoup(3));

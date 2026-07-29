@@ -105,3 +105,27 @@ export function packIslands(islands: Island[], settings: Settings): { pageCount:
   const used = islands.length > 0 ? Math.max(...islands.map((i) => i.placement.page)) + 1 : 0;
   return { pageCount: used, warnings };
 }
+
+/**
+ * Largest scale (mm/unit) at which every island fits on one page, measured
+ * from the current layout. Tab geometry depends on scale (fixed mm depth),
+ * so callers should re-run the pipeline at the returned scale and iterate
+ * once or twice if an oversize warning persists.
+ */
+export function computeMaxScale(islands: Island[], settings: Settings): number {
+  const { scaleMmPerUnit: scale, pageWidthMm, pageHeightMm, marginMm } = settings;
+  const availW = pageWidthMm - 2 * marginMm;
+  const availH = pageHeightMm - 2 * marginMm;
+  let sMax = Infinity;
+  for (const island of islands) {
+    const { angle, width, height } = minAreaRect(islandPoints(island));
+    const rotation = width > height ? angle + Math.PI / 2 : angle;
+    const b = measure(island, rotation, scale);
+    const fit = Math.max(
+      Math.min(availW / b.wMm, availH / b.hMm),
+      Math.min(availW / b.hMm, availH / b.wMm),
+    );
+    if (fit * scale < sMax) sMax = fit * scale;
+  }
+  return Number.isFinite(sMax) ? sMax : scale;
+}
