@@ -12,6 +12,24 @@ interface Box {
   minMm: Vec2; // bbox min of rotated+scaled points
 }
 
+/**
+ * Does the island fit on one page at the current scale? Measured on the
+ * MABR of its points; `allowanceMm` shrinks the usable area (e.g. room for
+ * tabs when they are not generated yet).
+ */
+export function islandFitsPage(island: Island, settings: Settings, allowanceMm = 0): boolean {
+  const { scaleMmPerUnit: scale, pageWidthMm, pageHeightMm, marginMm } = settings;
+  const availW = pageWidthMm - 2 * marginMm - allowanceMm;
+  const availH = pageHeightMm - 2 * marginMm - allowanceMm;
+  const { angle, width, height } = minAreaRect(islandPoints(island));
+  const rotation = width > height ? angle + Math.PI / 2 : angle;
+  const b = measure(island, rotation, scale);
+  return (
+    (b.wMm <= availW && b.hMm <= availH) ||
+    (b.hMm <= availW && b.wMm <= availH)
+  );
+}
+
 /** all points that ink can touch: face vertices and tab corners */
 function islandPoints(island: Island): Vec2[] {
   const pts: Vec2[] = [];

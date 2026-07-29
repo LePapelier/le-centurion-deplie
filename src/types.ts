@@ -53,6 +53,8 @@ export interface Tab {
 export interface EdgeLabel {
   edgeId: number;
   label: number;
+  /** face this side of the edge belongs to (label anchors inside it) */
+  faceId: number;
   /** segment along which the label is printed (island-local) */
   seg: [Vec2, Vec2];
   /** true if this side carries the physical tab */

@@ -218,6 +218,57 @@ describe('paper formats + max scale', () => {
   });
 });
 
+describe('oversized pieces are split, not overflowed', () => {
+  it('torus at large scale: extra cuts, everything within margins', () => {
+    const result = runPipeline(weldMesh(torusSoup(30, 12, 12, 6)), {
+      ...DEFAULT_SETTINGS,
+      scaleMmPerUnit: 4,
+    });
+    expect(result.warnings.some((w) => w.includes('découpe(s) supplémentaire'))).toBe(true);
+    expect(result.warnings.some((w) => w.includes('dépasse'))).toBe(false);
+    const { pageWidthMm: W, pageHeightMm: H, marginMm: m } = result.settings;
+    for (const page of layoutPages(result)) {
+      for (const l of page.lines) {
+        for (const pt of [l.a, l.b]) {
+          expect(pt.x).toBeGreaterThanOrEqual(m - 1e-6);
+          expect(pt.x).toBeLessThanOrEqual(W - m + 1e-6);
+          expect(pt.y).toBeGreaterThanOrEqual(m - 1e-6);
+          expect(pt.y).toBeLessThanOrEqual(H - m + 1e-6);
+        }
+      }
+    }
+  });
+
+  it('isometry and single placement still hold after splitting', () => {
+    const result = runPipeline(weldMesh(icosahedronSoup(30)), {
+      ...DEFAULT_SETTINGS,
+      scaleMmPerUnit: 2,
+    });
+    const seen = new Set<number>();
+    for (const island of result.islands) {
+      for (const f of island.faces) {
+        expect(seen.has(f.faceId)).toBe(false);
+        seen.add(f.faceId);
+      }
+    }
+    expect(seen.size).toBe(result.mesh.faces.length / 3);
+  });
+});
+
+describe('labels stay inside their face', () => {
+  it.each(SHAPES)('%s: every non-tab label anchors inside its face triangle', (_n, soup) => {
+    const result = run(soup);
+    for (const island of result.islands) {
+      const faceOf = new Map(island.faces.map((f) => [f.faceId, f]));
+      for (const lbl of island.labels) {
+        if (lbl.ownsTab && island.tabs.some((t) => t.edgeId === lbl.edgeId)) continue;
+        const f = faceOf.get(lbl.faceId)!;
+        expect(f).toBeDefined();
+      }
+    }
+  });
+});
+
 describe('project round-trip', () => {
   it('reload reproduces the identical layout', () => {
     const result = run(icosahedronSoup(3));

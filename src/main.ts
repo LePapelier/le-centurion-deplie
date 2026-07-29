@@ -157,6 +157,53 @@ for (const btn of document.querySelectorAll<HTMLButtonElement>('button[data-samp
   });
 }
 
+// zoom / pan of the 2D preview
+const zoomLevelEl = document.getElementById('zoomLevel')!;
+let zoom = 100;
+const setZoom = (z: number) => {
+  zoom = Math.min(800, Math.max(25, Math.round(z)));
+  pagesEl.style.setProperty('--zoom', String(zoom));
+  zoomLevelEl.textContent = `${zoom} %`;
+};
+document.getElementById('zoomIn')!.addEventListener('click', () => setZoom(zoom * 1.25));
+document.getElementById('zoomOut')!.addEventListener('click', () => setZoom(zoom / 1.25));
+document.getElementById('zoomReset')!.addEventListener('click', () => setZoom(100));
+document.getElementById('zoomFit')!.addEventListener('click', () => {
+  // width so one full page height fits the panel
+  const first = pagesEl.querySelector<SVGSVGElement>('.page-svg');
+  if (!first) return setZoom(100);
+  const s = currentSettings();
+  const availH = pagesEl.clientHeight - 50;
+  const availW = pagesEl.clientWidth - 24;
+  const widthPx = Math.min(availW, (availH * s.pageWidthMm) / s.pageHeightMm);
+  setZoom((100 * widthPx) / availW);
+});
+pagesEl.addEventListener(
+  'wheel',
+  (e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    e.preventDefault();
+    setZoom(zoom * (e.deltaY < 0 ? 1.1 : 1 / 1.1));
+  },
+  { passive: false },
+);
+let pan: { x: number; y: number; left: number; top: number } | null = null;
+pagesEl.addEventListener('pointerdown', (e) => {
+  // touch devices pan via native scrolling; drag-to-pan is mouse-only
+  if (e.pointerType !== 'mouse' || e.button !== 0) return;
+  pan = { x: e.clientX, y: e.clientY, left: pagesEl.scrollLeft, top: pagesEl.scrollTop };
+  pagesEl.classList.add('panning');
+});
+window.addEventListener('pointermove', (e) => {
+  if (!pan) return;
+  pagesEl.scrollLeft = pan.left - (e.clientX - pan.x);
+  pagesEl.scrollTop = pan.top - (e.clientY - pan.y);
+});
+window.addEventListener('pointerup', () => {
+  pan = null;
+  pagesEl.classList.remove('panning');
+});
+
 pdfBtn.addEventListener('click', () => {
   if (!currentResult) return;
   exportPDF(currentResult).save(`${sourceName}.pdf`);

@@ -1,5 +1,5 @@
-import type { Island, UnfoldResult, Vec2 } from '../types';
-import { add2, midpoint2, norm2, rot2, scale2, sub2, v2 } from '../geom/vec2';
+import type { EdgeLabel, Island, UnfoldResult, Vec2 } from '../types';
+import { add2, midpoint2, rot2, scale2, sub2, v2 } from '../geom/vec2';
 import { STYLE } from './style';
 
 export interface PageLine {
@@ -65,7 +65,7 @@ export function layoutPages(result: UnfoldResult): PageContent[] {
     }
 
     for (const lbl of island.labels) {
-      const pos = labelAnchor(island, lbl.edgeId, lbl.ownsTab, lbl.seg, result.settings.scaleMmPerUnit);
+      const pos = labelAnchor(island, lbl, result.settings.scaleMmPerUnit);
       const dir = sub2(lbl.seg[1], lbl.seg[0]);
       let angle = Math.atan2(dir.y, dir.x);
       // island rotation happens on the page; add it, then keep text upright
@@ -83,15 +83,9 @@ function sameSeg(base: [Vec2, Vec2], a: Vec2, b: Vec2): boolean {
 }
 
 /** label position in island-local units */
-function labelAnchor(
-  island: Island,
-  edgeId: number,
-  ownsTab: boolean,
-  seg: [Vec2, Vec2],
-  scale: number,
-): Vec2 {
-  if (ownsTab) {
-    const tab = island.tabs.find((t) => t.edgeId === edgeId && sameSeg(t.base, seg[0], seg[1]));
+function labelAnchor(island: Island, lbl: EdgeLabel, scale: number): Vec2 {
+  if (lbl.ownsTab) {
+    const tab = island.tabs.find((t) => t.edgeId === lbl.edgeId && sameSeg(t.base, lbl.seg[0], lbl.seg[1]));
     if (tab) {
       // centroid of the tab quad
       let cx = 0, cy = 0;
@@ -102,11 +96,18 @@ function labelAnchor(
       return v2(cx / tab.quad.length, cy / tab.quad.length);
     }
   }
-  // inside the face: inset from the segment midpoint toward the interior
-  // (right of p→q — islands are mirrored, math-CW winding)
-  const mid = midpoint2(seg[0], seg[1]);
-  const d = norm2(sub2(seg[1], seg[0]));
-  const inward = v2(d.y, -d.x);
-  const inset = STYLE.labelInsetMm / scale;
-  return add2(mid, scale2(inward, inset));
+  // inside the owning face: move from the edge midpoint toward the face
+  // centroid, capped so thin faces never push the label outside
+  const mid = midpoint2(lbl.seg[0], lbl.seg[1]);
+  const face = island.faces.find((f) => f.faceId === lbl.faceId);
+  if (!face) return mid;
+  const centroid = v2(
+    (face.pts[0].x + face.pts[1].x + face.pts[2].x) / 3,
+    (face.pts[0].y + face.pts[1].y + face.pts[2].y) / 3,
+  );
+  const toC = sub2(centroid, mid);
+  const dist = Math.hypot(toC.x, toC.y);
+  if (dist === 0) return mid;
+  const inset = Math.min(STYLE.labelInsetMm / scale, 0.8 * dist);
+  return add2(mid, scale2(toC, inset / dist));
 }

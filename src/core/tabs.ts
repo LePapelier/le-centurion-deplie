@@ -49,7 +49,7 @@ export function generateTabs(
       const k = cornerOfEdge(face, e.id);
       const p = entry.pts[k];
       const q = entry.pts[(k + 1) % 3];
-      entry.island.labels.push({ edgeId: e.id, label, seg: [p, q], ownsTab });
+      entry.island.labels.push({ edgeId: e.id, label, faceId: face, seg: [p, q], ownsTab });
       if (!ownsTab) continue;
 
       const quad = fitTab(entry.island, p, q, tabDepthUnits, tol);
