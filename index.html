@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Assemblage papier — dépliage papercraft</title>
+    <style>
+      :root {
+        --bg: #f5f4f0;
+        --panel: #ffffff;
+        --border: #ddd8cc;
+        --accent: #b0532a;
+        --text: #33302a;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel);
+        flex-wrap: wrap;
+      }
+      header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+      header .spacer { flex: 1; }
+      main { flex: 1; display: flex; min-height: 0; }
+      #view3d { flex: 1; min-width: 0; position: relative; }
+      #view3d canvas { display: block; }
+      #pages {
+        width: 44%;
+        min-width: 320px;
+        overflow-y: auto;
+        padding: 12px;
+        border-left: 1px solid var(--border);
+        background: #e9e7e0;
+      }
+      .page { margin-bottom: 14px; }
+      .page-title { font-size: 12px; color: #777; margin-bottom: 3px; }
+      .page-svg {
+        width: 100%;
+        display: block;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+        background: white;
+      }
+      button, label.btn {
+        font: inherit;
+        font-size: 13px;
+        padding: 6px 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--panel);
+        cursor: pointer;
+      }
+      button.primary { background: var(--accent); border-color: var(--accent); color: white; }
+      button:disabled { opacity: 0.45; cursor: default; }
+      .ctrl { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+      .ctrl input { width: 70px; font: inherit; padding: 4px; border: 1px solid var(--border); border-radius: 4px; }
+      #dropzone {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        color: #888;
+        font-size: 15px;
+        pointer-events: none;
+      }
+      #dropzone.hidden { display: none; }
+      body.dragging::after {
+        content: 'Déposer le fichier ici';
+        position: fixed;
+        inset: 0;
+        background: rgba(176, 83, 42, 0.12);
+        border: 3px dashed var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        color: var(--accent);
+        z-index: 10;
+      }
+      #warnings {
+        position: absolute;
+        left: 12px;
+        bottom: 12px;
+        max-width: 60%;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        z-index: 5;
+      }
+      .warning {
+        background: #fff6e0;
+        border: 1px solid #e0c060;
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 12.5px;
+      }
+      #stats { font-size: 12.5px; color: #777; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Assemblage papier</h1>
+      <label class="btn">
+        Ouvrir un modèle (STL/OBJ)
+        <input type="file" id="fileInput" accept=".stl,.obj,.papier.json,application/json" hidden />
+      </label>
+      <div class="ctrl">
+        <label for="scale">Échelle</label>
+        <input type="number" id="scale" value="1" min="0.001" step="0.1" />
+        <span>mm/unité</span>
+      </div>
+      <div class="ctrl">
+        <label for="tabDepth">Languettes</label>
+        <input type="number" id="tabDepth" value="6" min="1" step="1" />
+        <span>mm</span>
+      </div>
+      <div class="ctrl">
+        <span>Exemples :</span>
+        <button data-sample="cube.stl">cube</button>
+        <button data-sample="icosaedre.stl">icosaèdre</button>
+        <button data-sample="tore.stl">tore</button>
+      </div>
+      <span id="stats"></span>
+      <div class="spacer"></div>
+      <button id="saveProject" disabled>Fichier projet</button>
+      <button id="exportPdf" class="primary" disabled>Exporter le PDF</button>
+    </header>
+    <main>
+      <div id="view3d">
+        <div id="dropzone">Glisser-déposer un modèle 3D (STL ou OBJ)<br />ou un fichier projet .papier.json</div>
+        <div id="warnings"></div>
+      </div>
+      <div id="pages"></div>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

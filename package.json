@@ -1,0 +1,25 @@
+{
+  "name": "assemblage-papier",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "samples": "vite-node scripts/make-samples.ts",
+    "pdf": "vite-node scripts/make-pdf.ts --"
+  },
+  "dependencies": {
+    "jspdf": "^3.0.1",
+    "three": "^0.178.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.178.0",
+    "typescript": "^5.8.0",
+    "vite": "^7.0.0",
+    "vite-node": "^6.0.0",
+    "vitest": "^3.2.0"
+  }
+}
