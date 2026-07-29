@@ -58,6 +58,8 @@
         padding: 4px 8px;
       }
       #zoomLevel { font-size: 12.5px; color: #666; min-width: 44px; text-align: center; }
+      #pagesToolbar .sep { flex: 0 0 1px; height: 22px; background: var(--border); margin: 0 4px; }
+      #pagesToolbar button.pressed { background: var(--accent); border-color: var(--accent); color: white; }
       #pages {
         --zoom: 100;
         flex: 1;
@@ -67,6 +69,17 @@
       }
       #pages.panning { cursor: grabbing; user-select: none; }
       .page { margin-bottom: 14px; width: calc(var(--zoom) * 1%); min-width: calc(var(--zoom) * 1%); }
+      #pages.mosaic {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-content: flex-start;
+      }
+      #pages.mosaic .page {
+        margin-bottom: 0;
+        width: calc(var(--zoom) * 1% - 12px);
+        min-width: calc(var(--zoom) * 1% - 12px);
+      }
       .page-title { font-size: 12px; color: #777; margin-bottom: 3px; }
       .page-svg {
         width: 100%;
@@ -196,6 +209,9 @@
           <button id="zoomIn" title="Zoomer">+</button>
           <button id="zoomReset" title="Taille normale">100 %</button>
           <button id="zoomFit" title="Page entière">Ajuster</button>
+          <span class="sep"></span>
+          <button id="viewList" class="pressed" title="Pages en colonne">Liste</button>
+          <button id="viewGrid" title="Pages en mosaïque">Mosaïque</button>
         </div>
         <div id="pages"></div>
       </div>

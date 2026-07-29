@@ -178,6 +178,19 @@ document.getElementById('zoomFit')!.addEventListener('click', () => {
   const widthPx = Math.min(availW, (availH * s.pageWidthMm) / s.pageHeightMm);
   setZoom((100 * widthPx) / availW);
 });
+const viewListBtn = document.getElementById('viewList') as HTMLButtonElement;
+const viewGridBtn = document.getElementById('viewGrid') as HTMLButtonElement;
+const setView = (mosaic: boolean) => {
+  pagesEl.classList.toggle('mosaic', mosaic);
+  viewListBtn.classList.toggle('pressed', !mosaic);
+  viewGridBtn.classList.toggle('pressed', mosaic);
+  // entering mosaic at full width would keep one page per row: start at 3 per row
+  if (mosaic && zoom > 50) setZoom(33);
+  if (!mosaic && zoom < 50) setZoom(100);
+};
+viewListBtn.addEventListener('click', () => setView(false));
+viewGridBtn.addEventListener('click', () => setView(true));
+
 pagesEl.addEventListener(
   'wheel',
   (e) => {
