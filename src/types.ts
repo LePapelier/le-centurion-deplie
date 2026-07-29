@@ -29,12 +29,19 @@ export interface Edge {
   kind: EdgeKind;
 }
 
+/** A message emitted by the core: translation key + substitution params.
+ *  Core modules stay language-free; the UI renders them via i18n. */
+export interface Notice {
+  key: string;
+  params?: Record<string, string | number>;
+}
+
 export interface MeshTopology {
   edges: Edge[];
   /** edge ids of the 3 edges of each face, aligned with face vertex order:
    *  faceEdges[3f+k] = edge between vertices faces[3f+k] and faces[3f+(k+1)%3] */
   faceEdges: Int32Array;
-  warnings: string[];
+  warnings: Notice[];
 }
 
 export interface Face2D {
@@ -118,5 +125,5 @@ export interface UnfoldResult {
   islands: Island[];
   pageCount: number;
   settings: Settings;
-  warnings: string[];
+  warnings: Notice[];
 }

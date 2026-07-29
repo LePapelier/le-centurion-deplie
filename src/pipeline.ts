@@ -1,10 +1,11 @@
-import type { Mesh, Settings, UnfoldResult } from './types';
+import type { Mesh, Notice, Settings, UnfoldResult } from './types';
 import { buildTopology } from './core/adjacency';
 import { decideFolds } from './core/spanning';
 import { buildIslands } from './core/islands';
 import { generateTabs } from './core/tabs';
 import { islandFitsPage, packIslands } from './core/pack';
 import { chooseSplitEdge } from './core/split';
+import { NoticeError } from './notice';
 
 export const MAX_FACES = 100_000;
 export const WARN_FACES = 20_000;
@@ -13,12 +14,12 @@ export const WARN_FACES = 20_000;
 export function runPipeline(mesh: Mesh, settings: Settings): UnfoldResult {
   const faceCount = mesh.faces.length / 3;
   if (faceCount > MAX_FACES) {
-    throw new Error(`Maillage trop gros (${faceCount} faces, maximum ${MAX_FACES}).`);
+    throw new NoticeError({ key: 'warn.tooBig', params: { n: faceCount, max: MAX_FACES } });
   }
 
-  const warnings: string[] = [];
+  const warnings: Notice[] = [];
   if (faceCount > WARN_FACES) {
-    warnings.push(`Maillage lourd (${faceCount} faces) — le calcul peut prendre du temps.`);
+    warnings.push({ key: 'warn.heavy', params: { n: faceCount } });
   }
 
   const topology = buildTopology(mesh);
@@ -49,7 +50,7 @@ export function runPipeline(mesh: Mesh, settings: Settings): UnfoldResult {
     ({ islands, faceIsland } = buildIslands(mesh, topology));
   }
   if (split > 0) {
-    warnings.push(`Pièces trop grandes pour la page : ${split} découpe(s) supplémentaire(s) ajoutée(s).`);
+    warnings.push({ key: 'warn.split', params: { n: split } });
   }
 
   const tabDepthUnits = settings.tabDepthMm / settings.scaleMmPerUnit;

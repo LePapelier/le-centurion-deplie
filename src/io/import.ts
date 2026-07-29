@@ -2,12 +2,13 @@
  * STL (binary + ASCII) and OBJ parsers → raw triangle soup
  * (9 floats per triangle). Pure, DOM-free.
  */
+import { NoticeError } from '../notice';
 
 export function parseModel(name: string, buffer: ArrayBuffer): Float64Array {
   const lower = name.toLowerCase();
   if (lower.endsWith('.obj')) return parseOBJ(new TextDecoder().decode(buffer));
   if (lower.endsWith('.stl')) return parseSTL(buffer);
-  throw new Error(`Format non reconnu : ${name} (STL ou OBJ attendu).`);
+  throw new NoticeError({ key: 'err.format', params: { name } });
 }
 
 export function parseSTL(buffer: ArrayBuffer): Float64Array {
@@ -20,11 +21,11 @@ export function parseSTL(buffer: ArrayBuffer): Float64Array {
 }
 
 function parseBinarySTL(buffer: ArrayBuffer): Float64Array {
-  if (buffer.byteLength < 84) throw new Error('Fichier STL binaire tronqué.');
+  if (buffer.byteLength < 84) throw new NoticeError({ key: 'err.stlTruncated' });
   const view = new DataView(buffer);
   const triCount = view.getUint32(80, true);
   const expected = 84 + triCount * 50;
-  if (buffer.byteLength < expected) throw new Error('Fichier STL binaire tronqué.');
+  if (buffer.byteLength < expected) throw new NoticeError({ key: 'err.stlTruncated' });
   const soup = new Float64Array(triCount * 9);
   for (let t = 0; t < triCount; t++) {
     const base = 84 + t * 50 + 12; // skip normal
@@ -42,7 +43,7 @@ function parseAsciiSTL(text: string): Float64Array {
   while ((m = re.exec(text)) !== null) {
     soup.push(Number(m[1]), Number(m[2]), Number(m[3]));
   }
-  if (soup.length % 9 !== 0) throw new Error('Fichier STL ASCII mal formé.');
+  if (soup.length % 9 !== 0) throw new NoticeError({ key: 'err.stlMalformed' });
   return new Float64Array(soup);
 }
 
@@ -71,6 +72,6 @@ export function parseOBJ(text: string): Float64Array {
       }
     }
   }
-  if (soup.length === 0) throw new Error('Aucune face trouvée dans le fichier OBJ.');
+  if (soup.length === 0) throw new NoticeError({ key: 'err.objEmpty' });
   return new Float64Array(soup);
 }

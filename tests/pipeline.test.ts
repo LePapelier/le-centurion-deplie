@@ -173,7 +173,7 @@ describe('non-manifold input', () => {
       ...[0, 0, 0, 1, 0, 0, 0.5, -0.5, -1],
     ]);
     const result = run(soup);
-    expect(result.warnings.some((w) => w.includes('non-manifold'))).toBe(true);
+    expect(result.warnings.some((w) => w.key === 'warn.nonManifold')).toBe(true);
     const placed = result.islands.reduce((n, i) => n + i.faces.length, 0);
     expect(placed).toBe(3);
   });
@@ -213,7 +213,7 @@ describe('paper formats + max scale', () => {
     const sMax = computeMaxScale(base.islands, base.settings);
     expect(sMax).toBeGreaterThan(0);
     const scaled = runPipeline(mesh, { ...DEFAULT_SETTINGS, scaleMmPerUnit: sMax * 0.9 });
-    expect(scaled.warnings.some((w) => w.includes('dépasse'))).toBe(false);
+    expect(scaled.warnings.some((w) => w.key === 'warn.overflow')).toBe(false);
   });
 });
 
@@ -223,8 +223,8 @@ describe('oversized pieces are split, not overflowed', () => {
       ...DEFAULT_SETTINGS,
       scaleMmPerUnit: 4,
     });
-    expect(result.warnings.some((w) => w.includes('découpe(s) supplémentaire'))).toBe(true);
-    expect(result.warnings.some((w) => w.includes('dépasse'))).toBe(false);
+    expect(result.warnings.some((w) => w.key === 'warn.split')).toBe(true);
+    expect(result.warnings.some((w) => w.key === 'warn.overflow')).toBe(false);
     const { pageWidthMm: W, pageHeightMm: H, marginMm: m } = result.settings;
     for (const page of layoutPages(result)) {
       for (const l of page.lines) {

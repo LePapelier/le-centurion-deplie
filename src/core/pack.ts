@@ -1,4 +1,4 @@
-import type { Island, Settings, Vec2 } from '../types';
+import type { Island, Notice, Settings, Vec2 } from '../types';
 import { minAreaRect } from '../geom/mabr';
 import { rot2, scale2 } from '../geom/vec2';
 
@@ -55,11 +55,11 @@ function measure(island: Island, rotation: number, scale: number): Box {
  * vertical), then shelf-pack (FFDH) onto pages. Oversized islands get a page
  * of their own plus a warning with the maximum scale that would fit.
  */
-export function packIslands(islands: Island[], settings: Settings): { pageCount: number; warnings: string[] } {
+export function packIslands(islands: Island[], settings: Settings): { pageCount: number; warnings: Notice[] } {
   const { scaleMmPerUnit: scale, pageWidthMm, pageHeightMm, marginMm } = settings;
   const availW = pageWidthMm - 2 * marginMm;
   const availH = pageHeightMm - 2 * marginMm;
-  const warnings: string[] = [];
+  const warnings: Notice[] = [];
 
   const boxes: Box[] = islands.map((island) => {
     const { angle, width, height } = minAreaRect(islandPoints(island));
@@ -93,9 +93,10 @@ export function packIslands(islands: Island[], settings: Settings): { pageCount:
         Math.min(availW / (b.wMm / scale), availH / (b.hMm / scale)),
         Math.min(availW / (b.hMm / scale), availH / (b.wMm / scale)),
       );
-      warnings.push(
-        `Une pièce dépasse la page à l'échelle actuelle — échelle max ≈ ${(Math.floor(sFit * 100) / 100).toFixed(2)} mm/unité.`,
-      );
+      warnings.push({
+        key: 'warn.overflow',
+        params: { s: (Math.floor(sFit * 100) / 100).toFixed(2) },
+      });
       if (cursorX > 0 || shelfY > 0) page++;
       place(b, 0, 0, page);
       page++;

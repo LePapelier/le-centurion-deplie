@@ -1,6 +1,7 @@
 import type { UnfoldResult } from '../types';
 import { layoutPages } from './primitives';
 import { STYLE } from './style';
+import { t } from '../i18n';
 
 /** Render the layout as one SVG element per page — the print proof. */
 export function renderPages(result: UnfoldResult, container: HTMLElement): void {
@@ -13,7 +14,7 @@ export function renderPages(result: UnfoldResult, container: HTMLElement): void 
     wrap.className = 'page';
     const title = document.createElement('div');
     title.className = 'page-title';
-    title.textContent = `Page ${i + 1} / ${pages.length}`;
+    title.textContent = t('page.of', { n: i + 1, total: pages.length });
     wrap.appendChild(title);
 
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');

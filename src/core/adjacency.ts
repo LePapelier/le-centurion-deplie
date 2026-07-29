@@ -1,4 +1,4 @@
-import type { Edge, Mesh, MeshTopology } from '../types';
+import type { Edge, Mesh, MeshTopology, Notice } from '../types';
 import { cross3, dot3, dist3, getVertex, norm3, sub3 } from '../geom/vec3';
 
 /**
@@ -13,7 +13,7 @@ import { cross3, dot3, dist3, getVertex, norm3, sub3 } from '../geom/vec3';
  */
 export function buildTopology(mesh: Mesh): MeshTopology {
   const faceCount = mesh.faces.length / 3;
-  const warnings: string[] = [];
+  const warnings: Notice[] = [];
 
   const incidences = new Map<string, { face: number; corner: number }[]>();
   for (let f = 0; f < faceCount; f++) {
@@ -97,9 +97,7 @@ export function buildTopology(mesh: Mesh): MeshTopology {
   }
 
   if (nonManifoldCount > 0) {
-    warnings.push(
-      `Maillage non-manifold : ${nonManifoldCount} arête(s) partagée(s) par plus de 2 faces — certaines pièces devront être collées bord à bord.`,
-    );
+    warnings.push({ key: 'warn.nonManifold', params: { n: nonManifoldCount } });
   }
 
   return { edges, faceEdges, warnings };

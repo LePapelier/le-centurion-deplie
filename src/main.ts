@@ -13,6 +13,9 @@ import { renderPages } from './render/viewer2d';
 import { Viewer3D } from './render/viewer3d';
 import { exportPDF } from './io/pdf';
 import { computeMaxScale } from './core/pack';
+import { getLang, LANGS, setLang, t, tIn, type Lang } from './i18n';
+import { NoticeError, noticeOf } from './notice';
+import type { Notice } from './types';
 
 const viewer = new Viewer3D(document.getElementById('view3d')!);
 const pagesEl = document.getElementById('pages')!;
@@ -74,7 +77,7 @@ function updateDims(mesh: Mesh, scaleMmPerUnit: number): void {
     digits = 2;
   }
   const txt = dimsMm.map((d) => (d / div).toFixed(digits).replace('.', ',')).join(' × ');
-  dimsEl.innerHTML = `Assemblé : <b>${txt} ${unit}</b>`;
+  dimsEl.innerHTML = `${t('dims.assembled')} : <b>${txt} ${unit}</b>`;
   dimsEl.classList.add('visible');
 }
 
@@ -91,21 +94,32 @@ function recompute(): void {
     updateDims(currentMesh, currentResult.settings.scaleMmPerUnit);
 
     const faces = currentMesh.faces.length / 3;
-    statsEl.textContent = `${faces} faces · ${currentResult.islands.length} pièce(s) · ${currentResult.pageCount} page(s) · ${dt.toFixed(0)} ms`;
+    lastStats = { faces, pieces: currentResult.islands.length, pages: currentResult.pageCount, ms: dt };
+    renderStats();
     pdfBtn.disabled = false;
     maxScaleBtn.disabled = false;
     dropzone.classList.add('hidden');
   } catch (err) {
-    showWarnings([err instanceof Error ? err.message : String(err)]);
+    showWarnings([noticeOf(err)]);
   }
 }
 
-function showWarnings(list: string[]): void {
+let currentWarnings: Notice[] = [];
+let lastStats: { faces: number; pieces: number; pages: number; ms: number } | null = null;
+
+function renderStats(): void {
+  if (!lastStats) return;
+  const s = lastStats;
+  statsEl.textContent = `${s.faces} ${t('stats.faces')} · ${s.pieces} ${t('stats.pieces')} · ${s.pages} ${t('stats.pages')} · ${s.ms.toFixed(0)} ms`;
+}
+
+function showWarnings(list: Notice[]): void {
+  currentWarnings = list;
   warningsEl.innerHTML = '';
   for (const w of list) {
     const div = document.createElement('div');
     div.className = 'warning';
-    div.textContent = w;
+    div.textContent = t(w.key, w.params);
     warningsEl.appendChild(div);
   }
 }
@@ -117,7 +131,7 @@ async function openFile(file: File): Promise<void> {
     sourceName = file.name.replace(/\.(stl|obj)$/i, '');
     recompute();
   } catch (err) {
-    showWarnings([err instanceof Error ? err.message : String(err)]);
+    showWarnings([noticeOf(err)]);
   }
 }
 
@@ -140,7 +154,7 @@ maxScaleBtn.addEventListener('click', () => {
     // floor to one decimal: keeps the input on the 0.1 stepper grid
     scaleInput.value = String(Math.max(0.1, Math.floor(s * 10) / 10));
     recompute();
-    if (!currentResult || !currentResult.warnings.some((w) => w.includes('dépasse'))) break;
+    if (!currentResult || !currentResult.warnings.some((w) => w.key === 'warn.overflow')) break;
     s *= 0.95;
   }
 });
@@ -162,24 +176,30 @@ document.body.addEventListener('drop', (e) => {
 });
 
 const openModelSel = document.getElementById('openModel') as HTMLSelectElement;
-openModelSel.addEventListener('change', async () => {
+// not async: showPicker/click must run inside the user gesture, before any await
+openModelSel.addEventListener('change', () => {
   const choice = openModelSel.value;
   openModelSel.value = ''; // back to the placeholder
   if (!choice) return;
   if (choice === 'upload') {
-    fileInput.click();
+    if (typeof fileInput.showPicker === 'function') fileInput.showPicker();
+    else fileInput.click();
     return;
   }
+  void loadSample(choice);
+});
+
+async function loadSample(choice: string): Promise<void> {
   try {
     const resp = await fetch(`${import.meta.env.BASE_URL}samples/${choice}`);
-    if (!resp.ok) throw new Error(`Impossible de charger l'exemple ${choice}.`);
+    if (!resp.ok) throw new NoticeError({ key: 'err.sample', params: { name: choice } });
     currentMesh = weldMesh(parseModel(choice, await resp.arrayBuffer()));
     sourceName = choice.replace(/\.stl$/i, '');
     recompute();
   } catch (err) {
-    showWarnings([err instanceof Error ? err.message : String(err)]);
+    showWarnings([noticeOf(err)]);
   }
-});
+}
 
 // zoom / pan of the 2D preview
 const zoomLevelBtn = document.getElementById('zoomLevel') as HTMLButtonElement;
@@ -246,3 +266,26 @@ pdfBtn.addEventListener('click', () => {
   if (!currentResult) return;
   exportPDF(currentResult).save(`${sourceName}.pdf`);
 });
+
+// language: auto-detected from the browser, overridable and remembered.
+// Each option is labelled in its own language, so the menu stays readable
+// whatever the current one is.
+const langSel = document.getElementById('langSel') as HTMLSelectElement;
+for (const lang of LANGS) {
+  const opt = document.createElement('option');
+  opt.value = lang;
+  opt.textContent = tIn(lang, 'lang.name');
+  langSel.appendChild(opt);
+}
+langSel.value = getLang();
+langSel.addEventListener('change', () => {
+  setLang(langSel.value as Lang);
+  renderStats();
+  showWarnings(currentWarnings);
+  if (currentMesh && currentResult) {
+    updateDims(currentMesh, currentResult.settings.scaleMmPerUnit);
+    renderPages(currentResult, pagesEl); // page titles
+  }
+});
+
+setLang(getLang());
