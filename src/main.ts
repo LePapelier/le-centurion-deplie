@@ -161,20 +161,25 @@ document.body.addEventListener('drop', (e) => {
   if (file) void openFile(file);
 });
 
-for (const btn of document.querySelectorAll<HTMLButtonElement>('button[data-sample]')) {
-  btn.addEventListener('click', async () => {
-    const name = btn.dataset.sample!;
-    try {
-      const resp = await fetch(`${import.meta.env.BASE_URL}samples/${name}`);
-      if (!resp.ok) throw new Error(`Impossible de charger l'exemple ${name}.`);
-      currentMesh = weldMesh(parseModel(name, await resp.arrayBuffer()));
-      sourceName = name.replace(/\.stl$/i, '');
-      recompute();
-    } catch (err) {
-      showWarnings([err instanceof Error ? err.message : String(err)]);
-    }
-  });
-}
+const openModelSel = document.getElementById('openModel') as HTMLSelectElement;
+openModelSel.addEventListener('change', async () => {
+  const choice = openModelSel.value;
+  openModelSel.value = ''; // back to the placeholder
+  if (!choice) return;
+  if (choice === 'upload') {
+    fileInput.click();
+    return;
+  }
+  try {
+    const resp = await fetch(`${import.meta.env.BASE_URL}samples/${choice}`);
+    if (!resp.ok) throw new Error(`Impossible de charger l'exemple ${choice}.`);
+    currentMesh = weldMesh(parseModel(choice, await resp.arrayBuffer()));
+    sourceName = choice.replace(/\.stl$/i, '');
+    recompute();
+  } catch (err) {
+    showWarnings([err instanceof Error ? err.message : String(err)]);
+  }
+});
 
 // zoom / pan of the 2D preview
 const zoomLevelBtn = document.getElementById('zoomLevel') as HTMLButtonElement;
