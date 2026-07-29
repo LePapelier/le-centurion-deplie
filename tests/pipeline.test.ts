@@ -6,7 +6,6 @@ import { runPipeline } from '../src/pipeline';
 import { trianglesOverlap } from '../src/core/overlap';
 import { cubeSoup, icosahedronSoup, tetrahedronSoup, torusSoup, toBinarySTL } from '../src/geom/shapes';
 import { parseOBJ, parseSTL } from '../src/io/import';
-import { loadProject, saveProject } from '../src/io/project';
 import { layoutPages } from '../src/render/primitives';
 import { dist2 } from '../src/geom/vec2';
 import { dist3, getVertex } from '../src/geom/vec3';
@@ -269,13 +268,13 @@ describe('labels stay inside their face', () => {
   });
 });
 
-describe('project round-trip', () => {
-  it('reload reproduces the identical layout', () => {
-    const result = run(icosahedronSoup(3));
-    const json = saveProject(result, 'ico');
-    const proj = loadProject(json);
-    const again = runPipeline(proj.mesh, proj.settings, proj.edgeKinds);
-    expect(JSON.stringify(layoutPages(again))).toBe(JSON.stringify(layoutPages(result)));
+describe('determinism', () => {
+  it('two runs on the same mesh produce the identical layout', () => {
+    const mesh = weldMesh(icosahedronSoup(3));
+    const a = runPipeline(mesh, { ...DEFAULT_SETTINGS });
+    const mesh2 = weldMesh(icosahedronSoup(3));
+    const b = runPipeline(mesh2, { ...DEFAULT_SETTINGS });
+    expect(JSON.stringify(layoutPages(b))).toBe(JSON.stringify(layoutPages(a)));
   });
 });
 

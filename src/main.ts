@@ -1,30 +1,28 @@
 import {
   DEFAULT_SETTINGS,
   PAGE_FORMATS,
-  type EdgeKind,
   type Mesh,
   type PageFormat,
   type Settings,
   type UnfoldResult,
 } from './types';
-import { computeMaxScale } from './core/pack';
 import { weldMesh } from './core/weld';
 import { parseModel } from './io/import';
 import { runPipeline } from './pipeline';
 import { renderPages } from './render/viewer2d';
 import { Viewer3D } from './render/viewer3d';
 import { exportPDF } from './io/pdf';
-import { loadProject, saveProject } from './io/project';
+import { computeMaxScale } from './core/pack';
 
 const viewer = new Viewer3D(document.getElementById('view3d')!);
 const pagesEl = document.getElementById('pages')!;
 const warningsEl = document.getElementById('warnings')!;
 const statsEl = document.getElementById('stats')!;
+const dimsEl = document.getElementById('dims')!;
 const dropzone = document.getElementById('dropzone')!;
 const fileInput = document.getElementById('fileInput') as HTMLInputElement;
 const scaleInput = document.getElementById('scale') as HTMLInputElement;
 const tabDepthInput = document.getElementById('tabDepth') as HTMLInputElement;
-const savBtn = document.getElementById('saveProject') as HTMLButtonElement;
 const pdfBtn = document.getElementById('exportPdf') as HTMLButtonElement;
 const formatSel = document.getElementById('pageFormat') as HTMLSelectElement;
 const orientSel = document.getElementById('pageOrientation') as HTMLSelectElement;
@@ -33,7 +31,6 @@ const maxScaleBtn = document.getElementById('maxScale') as HTMLButtonElement;
 let currentMesh: Mesh | null = null;
 let currentResult: UnfoldResult | null = null;
 let sourceName = 'modele';
-let pinnedEdgeKinds: EdgeKind[] | undefined;
 
 function currentSettings(): Settings {
   const fmt = PAGE_FORMATS[formatSel.value as PageFormat] ?? PAGE_FORMATS.A4;
@@ -47,20 +44,54 @@ function currentSettings(): Settings {
   };
 }
 
+/** assembled model dimensions at print scale, adaptive unit */
+function updateDims(mesh: Mesh, scaleMmPerUnit: number): void {
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < mesh.positions.length; i += 3) {
+    for (let k = 0; k < 3; k++) {
+      const c = mesh.positions[i + k];
+      if (c < min[k]) min[k] = c;
+      if (c > max[k]) max[k] = c;
+    }
+  }
+  const dimsMm = [0, 1, 2].map((k) => (max[k] - min[k]) * scaleMmPerUnit);
+  const largest = Math.max(...dimsMm);
+  let unit: string;
+  let div: number;
+  let digits: number;
+  if (largest < 100) {
+    unit = 'mm';
+    div = 1;
+    digits = largest < 10 ? 1 : 0;
+  } else if (largest < 1000) {
+    unit = 'cm';
+    div = 10;
+    digits = 1;
+  } else {
+    unit = 'm';
+    div = 1000;
+    digits = 2;
+  }
+  const txt = dimsMm.map((d) => (d / div).toFixed(digits).replace('.', ',')).join(' × ');
+  dimsEl.innerHTML = `Assemblé : <b>${txt} ${unit}</b>`;
+  dimsEl.classList.add('visible');
+}
+
 function recompute(): void {
   if (!currentMesh) return;
   try {
     const t0 = performance.now();
-    currentResult = runPipeline(currentMesh, currentSettings(), pinnedEdgeKinds);
+    currentResult = runPipeline(currentMesh, currentSettings());
     const dt = performance.now() - t0;
 
     viewer.setMesh(currentMesh, currentResult.topology);
     renderPages(currentResult, pagesEl);
     showWarnings(currentResult.warnings);
+    updateDims(currentMesh, currentResult.settings.scaleMmPerUnit);
 
     const faces = currentMesh.faces.length / 3;
     statsEl.textContent = `${faces} faces · ${currentResult.islands.length} pièce(s) · ${currentResult.pageCount} page(s) · ${dt.toFixed(0)} ms`;
-    savBtn.disabled = false;
     pdfBtn.disabled = false;
     maxScaleBtn.disabled = false;
     dropzone.classList.add('hidden');
@@ -81,19 +112,9 @@ function showWarnings(list: string[]): void {
 
 async function openFile(file: File): Promise<void> {
   try {
-    if (file.name.toLowerCase().endsWith('.json')) {
-      const proj = loadProject(await file.text());
-      currentMesh = proj.mesh;
-      sourceName = proj.sourceName;
-      pinnedEdgeKinds = proj.edgeKinds;
-      scaleInput.value = String(proj.settings.scaleMmPerUnit);
-      tabDepthInput.value = String(proj.settings.tabDepthMm);
-    } else {
-      const soup = parseModel(file.name, await file.arrayBuffer());
-      currentMesh = weldMesh(soup);
-      sourceName = file.name.replace(/\.(stl|obj)$/i, '');
-      pinnedEdgeKinds = undefined;
-    }
+    const soup = parseModel(file.name, await file.arrayBuffer());
+    currentMesh = weldMesh(soup);
+    sourceName = file.name.replace(/\.(stl|obj)$/i, '');
     recompute();
   } catch (err) {
     showWarnings([err instanceof Error ? err.message : String(err)]);
@@ -105,8 +126,6 @@ fileInput.addEventListener('change', () => {
   fileInput.value = '';
 });
 
-// settings changes re-run the pipeline; a re-decided layout is fine there,
-// but a pinned project keeps its stored fold/cut decision
 scaleInput.addEventListener('change', recompute);
 tabDepthInput.addEventListener('change', recompute);
 formatSel.addEventListener('change', recompute);
@@ -150,7 +169,6 @@ for (const btn of document.querySelectorAll<HTMLButtonElement>('button[data-samp
       if (!resp.ok) throw new Error(`Impossible de charger l'exemple ${name}.`);
       currentMesh = weldMesh(parseModel(name, await resp.arrayBuffer()));
       sourceName = name.replace(/\.stl$/i, '');
-      pinnedEdgeKinds = undefined;
       recompute();
     } catch (err) {
       showWarnings([err instanceof Error ? err.message : String(err)]);
@@ -159,16 +177,16 @@ for (const btn of document.querySelectorAll<HTMLButtonElement>('button[data-samp
 }
 
 // zoom / pan of the 2D preview
-const zoomLevelEl = document.getElementById('zoomLevel')!;
+const zoomLevelBtn = document.getElementById('zoomLevel') as HTMLButtonElement;
 let zoom = 100;
 const setZoom = (z: number) => {
   zoom = Math.min(800, Math.max(25, Math.round(z)));
   pagesEl.style.setProperty('--zoom', String(zoom));
-  zoomLevelEl.textContent = `${zoom} %`;
+  zoomLevelBtn.textContent = `${zoom} %`;
 };
 document.getElementById('zoomIn')!.addEventListener('click', () => setZoom(zoom * 1.25));
 document.getElementById('zoomOut')!.addEventListener('click', () => setZoom(zoom / 1.25));
-document.getElementById('zoomReset')!.addEventListener('click', () => setZoom(100));
+zoomLevelBtn.addEventListener('click', () => setZoom(100));
 document.getElementById('zoomFit')!.addEventListener('click', () => {
   // width so one full page height fits the panel
   const first = pagesEl.querySelector<SVGSVGElement>('.page-svg');
@@ -179,6 +197,7 @@ document.getElementById('zoomFit')!.addEventListener('click', () => {
   const widthPx = Math.min(availW, (availH * s.pageWidthMm) / s.pageHeightMm);
   setZoom((100 * widthPx) / availW);
 });
+
 const viewListBtn = document.getElementById('viewList') as HTMLButtonElement;
 const viewGridBtn = document.getElementById('viewGrid') as HTMLButtonElement;
 const setView = (mosaic: boolean) => {
@@ -221,14 +240,4 @@ window.addEventListener('pointerup', () => {
 pdfBtn.addEventListener('click', () => {
   if (!currentResult) return;
   exportPDF(currentResult).save(`${sourceName}.pdf`);
-});
-
-savBtn.addEventListener('click', () => {
-  if (!currentResult) return;
-  const blob = new Blob([saveProject(currentResult, sourceName)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${sourceName}.papier.json`;
-  a.click();
-  URL.revokeObjectURL(a.href);
 });

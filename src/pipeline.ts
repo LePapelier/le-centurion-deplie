@@ -1,4 +1,4 @@
-import type { EdgeKind, Mesh, Settings, UnfoldResult } from './types';
+import type { Mesh, Settings, UnfoldResult } from './types';
 import { buildTopology } from './core/adjacency';
 import { decideFolds } from './core/spanning';
 import { buildIslands } from './core/islands';
@@ -9,13 +9,8 @@ import { chooseSplitEdge } from './core/split';
 export const MAX_FACES = 100_000;
 export const WARN_FACES = 20_000;
 
-/**
- * Full pipeline from a welded mesh to placed, tabbed islands.
- * When edgeKinds is given (project reload), the stored fold/cut decision is
- * pinned instead of re-running the spanning heuristic — the unfolding is
- * deterministic from there.
- */
-export function runPipeline(mesh: Mesh, settings: Settings, edgeKinds?: EdgeKind[]): UnfoldResult {
+/** Full pipeline from a welded mesh to placed, tabbed islands. */
+export function runPipeline(mesh: Mesh, settings: Settings): UnfoldResult {
   const faceCount = mesh.faces.length / 3;
   if (faceCount > MAX_FACES) {
     throw new Error(`Maillage trop gros (${faceCount} faces, maximum ${MAX_FACES}).`);
@@ -29,11 +24,7 @@ export function runPipeline(mesh: Mesh, settings: Settings, edgeKinds?: EdgeKind
   const topology = buildTopology(mesh);
   warnings.push(...topology.warnings);
 
-  if (edgeKinds && edgeKinds.length === topology.edges.length) {
-    for (let i = 0; i < edgeKinds.length; i++) topology.edges[i].kind = edgeKinds[i];
-  } else {
-    decideFolds(topology, faceCount);
-  }
+  decideFolds(topology, faceCount);
 
   let { islands, faceIsland } = buildIslands(mesh, topology);
 

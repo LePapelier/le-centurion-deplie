@@ -8,107 +8,73 @@
       :root {
         --bg: #f5f4f0;
         --panel: #ffffff;
+        --panel-2: #f0eee8;
         --border: #ddd8cc;
         --accent: #b0532a;
         --text: #33302a;
+        --muted: #807a6e;
+        --ctl-h: 36px;
+        --radius: 8px;
       }
       * { box-sizing: border-box; }
       body {
         margin: 0;
         font-family: system-ui, sans-serif;
+        font-size: 14px;
         background: var(--bg);
         color: var(--text);
-        height: 100vh;
+        height: 100dvh;
         display: flex;
         flex-direction: column;
       }
-      header {
-        padding: 10px 16px;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        border-bottom: 1px solid var(--border);
+
+      /* ---------- controls (uniform) ---------- */
+      button, label.btn, select, input[type='number'] {
+        font: inherit;
+        height: var(--ctl-h);
+        padding: 0 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
         background: var(--panel);
-        flex-wrap: wrap;
+        color: var(--text);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
       }
-      header h1 { font-size: 16px; margin: 0; font-weight: 600; }
-      header .spacer { flex: 1; }
+      input[type='number'] { width: 76px; cursor: text; }
+      select { padding-right: 8px; }
+      button.primary { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
+      button.pressed { background: var(--text); border-color: var(--text); color: white; }
+      button:disabled, label.btn.disabled { opacity: 0.4; cursor: default; }
+      button.icon { width: var(--ctl-h); flex: 0 0 var(--ctl-h); padding: 0; font-size: 17px; }
+
+      /* ---------- header ---------- */
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--border);
+      }
+      header h1 { font-size: 15px; font-weight: 700; margin: 0 6px 0 0; white-space: nowrap; }
+      .field {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .spacer { flex: 1; }
+      #stats { font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+
+      /* ---------- layout ---------- */
       main { flex: 1; display: flex; min-height: 0; }
       #view3d { flex: 1; min-width: 0; position: relative; }
       #view3d canvas { display: block; }
-      #pagesPanel {
-        width: 44%;
-        min-width: 320px;
-        display: flex;
-        flex-direction: column;
-        border-left: 1px solid var(--border);
-        background: #e9e7e0;
-      }
-      #pagesToolbar {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 10px;
-        border-bottom: 1px solid var(--border);
-        background: #f0eee8;
-      }
-      #pagesToolbar button {
-        min-width: 34px;
-        min-height: 30px;
-        padding: 4px 8px;
-      }
-      #zoomLevel { font-size: 12.5px; color: #666; min-width: 44px; text-align: center; }
-      #pagesToolbar .sep { flex: 0 0 1px; height: 22px; background: var(--border); margin: 0 4px; }
-      #pagesToolbar button.pressed { background: var(--accent); border-color: var(--accent); color: white; }
-      #pages {
-        --zoom: 100;
-        flex: 1;
-        overflow: auto;
-        padding: 12px;
-        cursor: grab;
-      }
-      #pages.panning { cursor: grabbing; user-select: none; }
-      .page { margin-bottom: 14px; width: calc(var(--zoom) * 1%); min-width: calc(var(--zoom) * 1%); }
-      #pages.mosaic {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        align-content: flex-start;
-      }
-      #pages.mosaic .page {
-        margin-bottom: 0;
-        width: calc(var(--zoom) * 1% - 12px);
-        min-width: calc(var(--zoom) * 1% - 12px);
-      }
-      .page-title { font-size: 12px; color: #777; margin-bottom: 3px; }
-      .page-svg {
-        width: 100%;
-        display: block;
-        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
-        background: white;
-      }
-      @media (max-width: 820px) {
-        main { flex-direction: column; }
-        #view3d { flex: none; height: 34vh; }
-        #pagesPanel { width: 100%; min-width: 0; flex: 1; border-left: none; border-top: 1px solid var(--border); }
-        header { gap: 8px; padding: 8px 10px; }
-        header h1 { width: 100%; }
-        #warnings { max-width: 90%; }
-      }
-      button, label.btn {
-        font: inherit;
-        font-size: 13px;
-        padding: 6px 12px;
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        background: var(--panel);
-        cursor: pointer;
-      }
-      button.primary { background: var(--accent); border-color: var(--accent); color: white; }
-      button:disabled { opacity: 0.45; cursor: default; }
-      .ctrl { display: flex; align-items: center; gap: 6px; font-size: 13px; }
-      .ctrl input { width: 70px; font: inherit; padding: 4px; border: 1px solid var(--border); border-radius: 4px; }
-      .ctrl select { font: inherit; padding: 4px; border: 1px solid var(--border); border-radius: 4px; background: var(--panel); }
       #dropzone {
         position: absolute;
         inset: 0;
@@ -116,11 +82,44 @@
         align-items: center;
         justify-content: center;
         text-align: center;
-        color: #888;
+        color: #999;
         font-size: 15px;
         pointer-events: none;
+        padding: 20px;
       }
       #dropzone.hidden { display: none; }
+      #dims {
+        position: absolute;
+        left: 10px;
+        bottom: 10px;
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 6px 10px;
+        font-size: 12.5px;
+        color: var(--text);
+        pointer-events: none;
+        display: none;
+      }
+      #dims.visible { display: block; }
+      #dims b { font-weight: 600; }
+      #warnings {
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        max-width: min(420px, 80%);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        z-index: 5;
+      }
+      .warning {
+        background: #fff6e0;
+        border: 1px solid #e0c060;
+        border-radius: var(--radius);
+        padding: 6px 10px;
+        font-size: 12.5px;
+      }
       body.dragging::after {
         content: 'Déposer le fichier ici';
         position: fixed;
@@ -134,44 +133,93 @@
         color: var(--accent);
         z-index: 10;
       }
-      #warnings {
-        position: absolute;
-        left: 12px;
-        bottom: 12px;
-        max-width: 60%;
+
+      /* ---------- pages panel ---------- */
+      #pagesPanel {
+        width: 44%;
+        min-width: 340px;
         display: flex;
         flex-direction: column;
+        border-left: 1px solid var(--border);
+        background: #e9e7e0;
+      }
+      #pagesToolbar {
+        display: flex;
+        align-items: center;
         gap: 6px;
-        z-index: 5;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel-2);
       }
-      .warning {
-        background: #fff6e0;
-        border: 1px solid #e0c060;
-        border-radius: 6px;
-        padding: 6px 10px;
-        font-size: 12.5px;
+      #zoomLevel { min-width: 64px; font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; flex: 0 0 auto; }
+      #pagesToolbar button { white-space: nowrap; }
+      #pagesToolbar .sep { flex: 0 0 1px; height: 22px; background: var(--border); margin: 0 4px; }
+      #pages {
+        --zoom: 100;
+        flex: 1;
+        overflow: auto;
+        padding: 12px;
+        cursor: grab;
       }
-      #stats { font-size: 12.5px; color: #777; }
+      #pages.panning { cursor: grabbing; user-select: none; }
+      .page { margin-bottom: 14px; width: calc(var(--zoom) * 1%); min-width: calc(var(--zoom) * 1%); }
+      .page-title { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+      .page-svg {
+        width: 100%;
+        display: block;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+        background: white;
+      }
+      #pages.mosaic {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-content: flex-start;
+      }
+      #pages.mosaic .page {
+        margin-bottom: 0;
+        width: calc(var(--zoom) * 1% - 12px);
+        min-width: calc(var(--zoom) * 1% - 12px);
+      }
+
+      /* ---------- mobile ---------- */
+      @media (max-width: 820px) {
+        :root { --ctl-h: 40px; }
+        header { padding: 8px; gap: 6px; }
+        header h1 { width: 100%; margin: 0; }
+        header .field { font-size: 13px; }
+        #stats { width: 100%; order: 99; }
+        main { flex-direction: column; }
+        #view3d { flex: none; height: 32dvh; }
+        #pagesPanel { width: 100%; min-width: 0; flex: 1; border-left: none; border-top: 1px solid var(--border); }
+        #pagesToolbar { overflow-x: auto; }
+        #dims { font-size: 12px; }
+      }
     </style>
   </head>
   <body>
     <header>
       <h1>Paper Centurion</h1>
       <label class="btn">
-        Ouvrir un modèle (STL/OBJ)
-        <input type="file" id="fileInput" accept=".stl,.obj,.papier.json,application/json" hidden />
+        Ouvrir un modèle
+        <input type="file" id="fileInput" accept=".stl,.obj" hidden />
       </label>
-      <div class="ctrl">
+      <span class="field">
+        <button data-sample="cube.stl">cube</button>
+        <button data-sample="icosaedre.stl">icosaèdre</button>
+        <button data-sample="tore.stl">tore</button>
+      </span>
+      <span class="field">
         <label for="scale">Échelle</label>
         <input type="number" id="scale" value="1" min="0.1" step="0.1" />
-        <span>mm/unité</span>
-      </div>
-      <div class="ctrl">
+        <span>mm/u</span>
+      </span>
+      <span class="field">
         <label for="tabDepth">Languettes</label>
         <input type="number" id="tabDepth" value="6" min="1" step="1" />
         <span>mm</span>
-      </div>
-      <div class="ctrl">
+      </span>
+      <span class="field">
         <label for="pageFormat">Papier</label>
         <select id="pageFormat">
           <option>A5</option>
@@ -184,30 +232,23 @@
           <option value="portrait" selected>portrait</option>
           <option value="paysage">paysage</option>
         </select>
-      </div>
+      </span>
       <button id="maxScale" disabled title="Régler l'échelle au maximum tenant sur une feuille">Échelle max</button>
-      <div class="ctrl">
-        <span>Exemples :</span>
-        <button data-sample="cube.stl">cube</button>
-        <button data-sample="icosaedre.stl">icosaèdre</button>
-        <button data-sample="tore.stl">tore</button>
-      </div>
       <span id="stats"></span>
       <div class="spacer"></div>
-      <button id="saveProject" disabled>Fichier projet</button>
       <button id="exportPdf" class="primary" disabled>Exporter le PDF</button>
     </header>
     <main>
       <div id="view3d">
-        <div id="dropzone">Glisser-déposer un modèle 3D (STL ou OBJ)<br />ou un fichier projet .papier.json</div>
+        <div id="dropzone">Glisser-déposer un modèle 3D (STL ou OBJ)</div>
         <div id="warnings"></div>
+        <div id="dims"></div>
       </div>
       <div id="pagesPanel">
         <div id="pagesToolbar">
-          <button id="zoomOut" title="Dézoomer">−</button>
-          <span id="zoomLevel">100 %</span>
-          <button id="zoomIn" title="Zoomer">+</button>
-          <button id="zoomReset" title="Taille normale">100 %</button>
+          <button id="zoomOut" class="icon" title="Dézoomer">−</button>
+          <button id="zoomLevel" title="Revenir à 100 %">100 %</button>
+          <button id="zoomIn" class="icon" title="Zoomer">+</button>
           <button id="zoomFit" title="Page entière">Ajuster</button>
           <span class="sep"></span>
           <button id="viewList" class="pressed" title="Pages en colonne">Liste</button>

@@ -120,12 +120,3 @@ export interface UnfoldResult {
   settings: Settings;
   warnings: string[];
 }
-
-export interface ProjectFile {
-  format: 'papier-project';
-  version: 1;
-  sourceName: string;
-  mesh: { positions: number[]; faces: number[] };
-  settings: Settings;
-  edgeKinds: EdgeKind[];
-}
