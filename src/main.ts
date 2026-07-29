@@ -118,7 +118,8 @@ maxScaleBtn.addEventListener('click', () => {
   if (!currentResult) return;
   let s = computeMaxScale(currentResult.islands, currentResult.settings);
   for (let i = 0; i < 4; i++) {
-    scaleInput.value = String(Math.max(0.001, Math.floor(s * 100) / 100));
+    // floor to one decimal: keeps the input on the 0.1 stepper grid
+    scaleInput.value = String(Math.max(0.1, Math.floor(s * 10) / 10));
     recompute();
     if (!currentResult || !currentResult.warnings.some((w) => w.includes('dépasse'))) break;
     s *= 0.95;
