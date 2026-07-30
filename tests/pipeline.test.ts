@@ -308,6 +308,44 @@ describe('inconsistent winding is repaired at weld time', () => {
   });
 });
 
+describe('poster mode: pieces larger than one sheet', () => {
+  it('a single giant face spans a grid of pages, clipped and joint-marked', () => {
+    // one open triangle, 400 units → far beyond an A4 at scale 1
+    const soup = new Float64Array([0, 0, 0, 400, 0, 0, 0, 400, 0]);
+    const result = run(soup);
+    expect(result.islands).toHaveLength(1);
+    const isl = result.islands[0];
+    expect(isl.poster).toBeDefined();
+    const { cols, rows } = isl.poster!;
+    expect(cols * rows).toBeGreaterThan(1);
+    expect(result.pageCount).toBe(cols * rows);
+    expect(result.warnings.some((w) => w.key === 'warn.poster')).toBe(true);
+
+    const pages = layoutPages(result);
+    const { pageWidthMm: W, pageHeightMm: H, marginMm: m } = result.settings;
+    for (const page of pages) {
+      for (const l of page.lines) {
+        for (const pt of [l.a, l.b]) {
+          expect(pt.x).toBeGreaterThanOrEqual(m - 1e-6);
+          expect(pt.x).toBeLessThanOrEqual(W - m + 1e-6);
+          expect(pt.y).toBeGreaterThanOrEqual(m - 1e-6);
+          expect(pt.y).toBeLessThanOrEqual(H - m + 1e-6);
+        }
+      }
+    }
+
+    // the clipped pieces of the outline add up to the full perimeter
+    const totalCut = pages
+      .flatMap((p) => p.lines)
+      .filter((l) => l.kind === 'cut')
+      .reduce((s, l) => s + Math.hypot(l.b.x - l.a.x, l.b.y - l.a.y), 0);
+    const perimeter = 400 + 400 + Math.hypot(400, 400);
+    expect(Math.abs(totalCut - perimeter)).toBeLessThan(1e-6 * perimeter);
+
+    expect(pages.some((p) => p.lines.some((l) => l.kind === 'joint'))).toBe(true);
+  });
+});
+
 describe('determinism', () => {
   it('two runs on the same mesh produce the identical layout', () => {
     const mesh = weldMesh(icosahedronSoup(3));

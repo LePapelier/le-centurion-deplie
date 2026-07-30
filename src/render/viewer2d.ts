@@ -40,6 +40,10 @@ export function renderPages(result: UnfoldResult, container: HTMLElement): void 
         line.setAttribute('stroke', STYLE.mountainColor);
         line.setAttribute('stroke-width', String(STYLE.foldWidthMm));
         line.setAttribute('stroke-dasharray', STYLE.mountainDashMm.join(' '));
+      } else if (l.kind === 'joint') {
+        line.setAttribute('stroke', STYLE.jointColor);
+        line.setAttribute('stroke-width', String(STYLE.jointWidthMm));
+        line.setAttribute('stroke-dasharray', STYLE.jointDashMm.join(' '));
       } else {
         line.setAttribute('stroke', STYLE.valleyColor);
         line.setAttribute('stroke-width', String(STYLE.foldWidthMm));

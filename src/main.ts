@@ -124,12 +124,47 @@ function showWarnings(list: Notice[]): void {
   }
 }
 
+/**
+ * Pick a print scale that makes the PDF reasonable to cut and glue: no
+ * microscopic confetti, no room-sized poster. A probe run at a sane
+ * assembled size finds the scale where the largest piece exactly fills a
+ * page; we take 80 % of it, clamped to an assembled size of 8–50 cm.
+ */
+function chooseAutoScale(mesh: Mesh): number {
+  const min = [Infinity, Infinity, Infinity];
+  const max = [-Infinity, -Infinity, -Infinity];
+  for (let i = 0; i < mesh.positions.length; i += 3) {
+    for (let k = 0; k < 3; k++) {
+      const c = mesh.positions[i + k];
+      if (c < min[k]) min[k] = c;
+      if (c > max[k]) max[k] = c;
+    }
+  }
+  const maxDim = Math.max(max[0] - min[0], max[1] - min[1], max[2] - min[2]) || 1;
+  const probeScale = Math.max(0.1, Math.floor((120 / maxDim) * 10) / 10);
+  const probe = runPipeline(mesh, { ...currentSettings(), scaleMmPerUnit: probeScale });
+  let s = 0.8 * computeMaxScale(probe.islands, probe.settings);
+  s = Math.min(s, 500 / maxDim);
+  s = Math.max(s, 80 / maxDim);
+  return Math.max(0.1, Math.floor(s * 10) / 10);
+}
+
+function loadMesh(mesh: Mesh, name: string): void {
+  currentMesh = mesh;
+  sourceName = name;
+  try {
+    scaleInput.value = String(chooseAutoScale(mesh));
+  } catch (err) {
+    showWarnings([noticeOf(err)]);
+    return;
+  }
+  recompute();
+}
+
 async function openFile(file: File): Promise<void> {
   try {
     const soup = parseModel(file.name, await file.arrayBuffer());
-    currentMesh = weldMesh(soup);
-    sourceName = file.name.replace(/\.(stl|obj)$/i, '');
-    recompute();
+    loadMesh(weldMesh(soup), file.name.replace(/\.(stl|obj)$/i, ''));
   } catch (err) {
     showWarnings([noticeOf(err)]);
   }
@@ -207,9 +242,7 @@ async function loadSample(choice: string): Promise<void> {
   try {
     const resp = await fetch(`${import.meta.env.BASE_URL}samples/${choice}`);
     if (!resp.ok) throw new NoticeError({ key: 'err.sample', params: { name: choice } });
-    currentMesh = weldMesh(parseModel(choice, await resp.arrayBuffer()));
-    sourceName = choice.replace(/\.stl$/i, '');
-    recompute();
+    loadMesh(weldMesh(parseModel(choice, await resp.arrayBuffer())), choice.replace(/\.stl$/i, ''));
   } catch (err) {
     showWarnings([noticeOf(err)]);
   }

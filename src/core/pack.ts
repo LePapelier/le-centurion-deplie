@@ -69,6 +69,7 @@ export function packIslands(islands: Island[], settings: Settings): { pageCount:
 
   boxes.sort((a, b) => b.hMm - a.hMm);
 
+  let posterPieces = 0;
   let page = 0;
   let shelfY = 0;
   let shelfH = 0;
@@ -89,17 +90,15 @@ export function packIslands(islands: Island[], settings: Settings): { pageCount:
       b = measure(b.island, b.rotation + Math.PI / 2, scale);
     }
     if (b.wMm > availW || b.hMm > availH) {
-      const sFit = Math.max(
-        Math.min(availW / (b.wMm / scale), availH / (b.hMm / scale)),
-        Math.min(availW / (b.hMm / scale), availH / (b.wMm / scale)),
-      );
-      warnings.push({
-        key: 'warn.overflow',
-        params: { s: (Math.floor(sFit * 100) / 100).toFixed(2) },
-      });
+      // poster mode: the piece spans a grid of consecutive pages; the
+      // renderer clips it per cell and draws grey joint marks
+      const cols = Math.max(1, Math.ceil(b.wMm / availW));
+      const rows = Math.max(1, Math.ceil(b.hMm / availH));
       if (cursorX > 0 || shelfY > 0) page++;
       place(b, 0, 0, page);
-      page++;
+      b.island.poster = { cols, rows };
+      posterPieces++;
+      page += cols * rows;
       shelfY = 0;
       shelfH = 0;
       cursorX = 0;
@@ -121,7 +120,16 @@ export function packIslands(islands: Island[], settings: Settings): { pageCount:
     if (b.hMm > shelfH) shelfH = b.hMm;
   }
 
-  const used = islands.length > 0 ? Math.max(...islands.map((i) => i.placement.page)) + 1 : 0;
+  if (posterPieces > 0) warnings.push({ key: 'warn.poster', params: { n: posterPieces } });
+
+  const used =
+    islands.length > 0
+      ? Math.max(
+          ...islands.map(
+            (i) => i.placement.page + (i.poster ? i.poster.cols * i.poster.rows : 1),
+          ),
+        )
+      : 0;
   return { pageCount: used, warnings };
 }
 

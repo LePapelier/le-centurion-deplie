@@ -90,6 +90,9 @@ export interface Island {
   tabs: Tab[];
   labels: EdgeLabel[];
   placement: Placement;
+  /** set when the piece is larger than one page: it spans a grid of
+   *  cols × rows consecutive pages (poster mode, grey joint marks) */
+  poster?: { cols: number; rows: number };
 }
 
 export interface Settings {

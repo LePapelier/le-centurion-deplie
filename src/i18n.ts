@@ -50,6 +50,7 @@ const STRINGS: Record<Lang, Dict> = {
     'err.stlMalformed': 'Fichier STL ASCII mal formé.',
     'err.objEmpty': 'Aucune face trouvée dans le fichier OBJ.',
     'err.unknown': 'Erreur : {msg}',
+    'warn.poster': '{n} pièce(s) plus grande(s) qu\'une feuille : répartie(s) sur plusieurs pages, raccords gris à coller bord à bord.',
   },
   en: {
     'lang.name': 'English',
@@ -98,6 +99,7 @@ const STRINGS: Record<Lang, Dict> = {
     'err.stlMalformed': 'Malformed ASCII STL file.',
     'err.objEmpty': 'No face found in the OBJ file.',
     'err.unknown': 'Error: {msg}',
+    'warn.poster': '{n} piece(s) larger than one sheet: spread across several pages, glue along the grey joint marks.',
   },
   es: {
     'lang.name': 'Español',
@@ -146,6 +148,7 @@ const STRINGS: Record<Lang, Dict> = {
     'err.stlMalformed': 'Archivo STL ASCII mal formado.',
     'err.objEmpty': 'No se encontró ninguna cara en el archivo OBJ.',
     'err.unknown': 'Error: {msg}',
+    'warn.poster': '{n} pieza(s) más grande(s) que una hoja: repartida(s) en varias páginas, pega por las marcas grises.',
   },
   de: {
     'lang.name': 'Deutsch',
@@ -194,6 +197,7 @@ const STRINGS: Record<Lang, Dict> = {
     'err.stlMalformed': 'Fehlerhafte ASCII-STL-Datei.',
     'err.objEmpty': 'Keine Fläche in der OBJ-Datei gefunden.',
     'err.unknown': 'Fehler: {msg}',
+    'warn.poster': '{n} Teil(e) größer als ein Blatt: auf mehrere Seiten verteilt, an den grauen Stoßmarken zusammenkleben.',
   },
 };
 

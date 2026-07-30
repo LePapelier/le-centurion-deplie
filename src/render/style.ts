@@ -11,4 +11,8 @@ export const STYLE = {
   mountainColor: '#c02020',
   valleyColor: '#2040c0',
   labelColor: '#404040',
+  /** poster joint marks: where two sheets of an oversized piece meet */
+  jointWidthMm: 0.15,
+  jointDashMm: [1.5, 1.5] as number[],
+  jointColor: '#aaaaaa',
 } as const;
