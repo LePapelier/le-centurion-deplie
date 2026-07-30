@@ -140,6 +140,20 @@ fileInput.addEventListener('change', () => {
   fileInput.value = '';
 });
 
+// custom −/+ steppers (native number spinners are too small to hit)
+for (const btn of document.querySelectorAll<HTMLButtonElement>('button.step')) {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.stepFor!) as HTMLInputElement;
+    const dir = Number(btn.dataset.step);
+    const step = Number(input.step) || 1;
+    const min = input.min === '' ? -Infinity : Number(input.min);
+    const decimals = (input.step.split('.')[1] ?? '').length;
+    const next = Math.max(min, (Number(input.value) || 0) + dir * step);
+    input.value = next.toFixed(decimals);
+    recompute();
+  });
+}
+
 scaleInput.addEventListener('change', recompute);
 tabDepthInput.addEventListener('change', recompute);
 formatSel.addEventListener('change', recompute);

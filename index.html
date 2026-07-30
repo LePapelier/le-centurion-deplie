@@ -51,7 +51,24 @@
         justify-content: center;
         cursor: pointer;
       }
-      input[type='number'] { width: 76px; cursor: text; }
+      input[type='number'] { width: 62px; cursor: text; text-align: center; }
+      /* native spinners are too small to hit — replaced by .step buttons */
+      input[type='number'] { -moz-appearance: textfield; appearance: textfield; }
+      input[type='number']::-webkit-outer-spin-button,
+      input[type='number']::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      .stepper { display: inline-flex; align-items: center; }
+      .stepper input { border-radius: 0; border-left: none; border-right: none; }
+      .stepper .step {
+        width: var(--ctl-h);
+        flex: 0 0 var(--ctl-h);
+        padding: 0;
+        font-size: 18px;
+        line-height: 1;
+        color: var(--text);
+      }
+      .stepper .step:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+      .stepper .step:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+      .stepper .step:active { background: var(--panel-2); }
       select { padding-right: 8px; }
       button.primary { background: var(--accent); border-color: var(--accent); color: white; font-weight: 600; }
       button.pressed { background: var(--text); border-color: var(--text); color: white; }
@@ -221,12 +238,20 @@
       <input type="file" id="fileInput" accept=".stl,.obj" class="visually-hidden" />
       <span class="field">
         <label for="scale" data-i18n="label.scale">Échelle</label>
-        <input type="number" id="scale" value="1" min="0.1" step="0.1" />
+        <span class="stepper">
+          <button type="button" class="step" data-step-for="scale" data-step="-1" aria-label="−">−</button>
+          <input type="number" id="scale" value="1" min="0.1" step="0.1" />
+          <button type="button" class="step" data-step-for="scale" data-step="1" aria-label="+">+</button>
+        </span>
         <span data-i18n="unit.mmPerUnit">mm/u</span>
       </span>
       <span class="field">
         <label for="tabDepth" data-i18n="label.tabs">Languettes</label>
-        <input type="number" id="tabDepth" value="6" min="1" step="1" />
+        <span class="stepper">
+          <button type="button" class="step" data-step-for="tabDepth" data-step="-1" aria-label="−">−</button>
+          <input type="number" id="tabDepth" value="6" min="1" step="1" />
+          <button type="button" class="step" data-step-for="tabDepth" data-step="1" aria-label="+">+</button>
+        </span>
         <span data-i18n="unit.mm">mm</span>
       </span>
       <span class="field">
