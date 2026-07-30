@@ -268,6 +268,46 @@ describe('labels stay inside their face', () => {
   });
 });
 
+describe('inconsistent winding is repaired at weld time', () => {
+  const flipAlternate = (soup: Float64Array): Float64Array => {
+    const s = new Float64Array(soup);
+    for (let t = 0; t < s.length / 9; t += 2) {
+      for (let k = 0; k < 3; k++) {
+        const tmp = s[9 * t + 3 + k];
+        s[9 * t + 3 + k] = s[9 * t + 6 + k];
+        s[9 * t + 6 + k] = tmp;
+      }
+    }
+    return s;
+  };
+
+  it('fully inverted cube behaves like the clean cube', () => {
+    const inverted = new Float64Array(cubeSoup());
+    for (let t = 0; t < inverted.length / 9; t++) {
+      for (let k = 0; k < 3; k++) {
+        const tmp = inverted[9 * t + 3 + k];
+        inverted[9 * t + 3 + k] = inverted[9 * t + 6 + k];
+        inverted[9 * t + 6 + k] = tmp;
+      }
+    }
+    const clean = run(cubeSoup());
+    const fixed = run(inverted);
+    expect(fixed.islands.length).toBe(clean.islands.length);
+    // convex solid: every fold is a mountain after outward orientation
+    for (const e of fixed.topology.edges) {
+      if (e.kind === 'fold') expect(e.dihedral).toBeGreaterThan(0);
+    }
+  });
+
+  it('alternating-flipped torus produces the exact clean-torus layout', () => {
+    const result = run(flipAlternate(torusSoup(28, 11, 14, 7)));
+    const clean = run(torusSoup(28, 11, 14, 7));
+    const tabsOf = (r: UnfoldResult) => r.islands.reduce((n, i) => n + i.tabs.length, 0);
+    expect(tabsOf(result)).toBe(tabsOf(clean));
+    expect(JSON.stringify(layoutPages(result))).toBe(JSON.stringify(layoutPages(clean)));
+  });
+});
+
 describe('determinism', () => {
   it('two runs on the same mesh produce the identical layout', () => {
     const mesh = weldMesh(icosahedronSoup(3));

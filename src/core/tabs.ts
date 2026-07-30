@@ -52,7 +52,8 @@ export function generateTabs(
       entry.island.labels.push({ edgeId: e.id, label, faceId: face, seg: [p, q], ownsTab });
       if (!ownsTab) continue;
 
-      const quad = fitTab(entry.island, p, q, tabDepthUnits, tol);
+      const face2d = entry.island.faces.find((f2) => f2.faceId === face)!;
+      const quad = fitTab(entry.island, p, q, face2d.pts, tabDepthUnits, tol);
       if (quad) {
         entry.island.tabs.push({
           edgeId: e.id,
@@ -67,17 +68,29 @@ export function generateTabs(
 }
 
 /**
- * Trapezoid on the outside of the face across segment p→q. Islands are laid
- * out mirrored (math-CW winding, see placeRootFace), so walking corner k →
- * k+1 the face interior is on the RIGHT of p→q and the outside on the left.
+ * Trapezoid on the outside of the face across segment p→q. The outward
+ * normal is chosen geometrically — away from the face centroid — so a face
+ * whose winding survived un-oriented (open non-orientable patches) still
+ * gets its tab on the correct side.
  * Tries 45° base angles at full depth, then 60°, then half depth; null if
  * every attempt collides.
  */
-function fitTab(island: Island, p: Vec2, q: Vec2, depth: number, tol: number): Vec2[] | null {
+function fitTab(
+  island: Island,
+  p: Vec2,
+  q: Vec2,
+  facePts: [Vec2, Vec2, Vec2],
+  depth: number,
+  tol: number,
+): Vec2[] | null {
   const L = Math.hypot(q.x - p.x, q.y - p.y);
   if (L < tol * 10) return null;
   const d = v2((q.x - p.x) / L, (q.y - p.y) / L);
-  const n = v2(-d.y, d.x); // left of p→q = outside of the face
+  let n = v2(-d.y, d.x);
+  // point away from the face centroid = outside
+  const cx = (facePts[0].x + facePts[1].x + facePts[2].x) / 3 - (p.x + q.x) / 2;
+  const cy = (facePts[0].y + facePts[1].y + facePts[2].y) / 3 - (p.y + q.y) / 2;
+  if (n.x * cx + n.y * cy > 0) n = v2(d.y, -d.x);
 
   const attempts: [number, number][] = [
     [Math.min(depth, 0.4 * L), 1], // 45°: inset = h
